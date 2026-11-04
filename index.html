@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#c2410c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Varillas en Columnas</title>
+<style>
+:root{--bg:#fafaf9;--card:#fff;--tx:#1c1917;--mu:#78716c;--ac:#c2410c;--bd:#e7e5e4;--ok:#15803d;--bad:#b91c1c}
+:root[data-theme="light"]{--bg:#fafaf9;--card:#fff;--tx:#1c1917;--mu:#78716c;--ac:#c2410c;--bd:#e7e5e4;--ok:#15803d;--bad:#b91c1c}
+:root[data-theme="dark"]{--bg:#1c1917;--card:#292524;--tx:#fafaf9;--mu:#a8a29e;--bd:#44403c;--ac:#fb923c;--ok:#4ade80;--bad:#f87171}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1917;--card:#292524;--tx:#fafaf9;--mu:#a8a29e;--bd:#44403c;--ac:#fb923c;--ok:#4ade80;--bad:#f87171}}
+*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:var(--ac);color:#fff;padding:16px}header h1{margin:0;font-size:20px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+main{max-width:640px;margin:auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:15px;margin:0 0 10px;color:var(--ac)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:var(--mu);display:block}
+input,select{width:100%;padding:10px;font-size:16px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+.r{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:15px}
+.r:last-child{border:0}.r b{text-align:right}.big{font-size:22px;color:var(--ac)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:center}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.note{font-size:12px;color:var(--mu);margin:8px 0 0}
+button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-size:15px;margin-top:8px}
+#inst{display:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[hidden]{display:none!important}
+</style></head><body>
+<header><h1>🏗️ Varillas en Columnas</h1><p>Cuantía 1%–8% del área · Cálculo de compra</p></header>
+<main>
+<div class="card"><h2>1. Sección y altura</h2><div class="g">
+<div><label>Ancho (cm)</label><input id="b" type="number" value="30" inputmode="decimal"></div>
+<div><label>Largo (cm)</label><input id="h" type="number" value="30" inputmode="decimal"></div>
+<div><label>Altura columna (m)</label><input id="alt" type="number" value="4" step="0.1" inputmode="decimal"></div>
+<div><label>Núm. de columnas</label><input id="nc" type="number" value="1" inputmode="numeric"></div>
+</div></div>
+<div class="card"><h2>2. Acero</h2><div class="g">
+<div><label>Varilla longitudinal</label><select id="dv"></select></div>
+<div><label>Varilla del estribo</label><select id="de"></select></div>
+<div><label>Separación estribos (cm)</label><input id="sep" type="number" value="20" inputmode="decimal"></div>
+<div><label>Recubrimiento (cm)</label><input id="rec" type="number" value="4" step="0.5" inputmode="decimal"></div>
+<div><label>Longitud comercial (m)</label><input id="lc" type="number" value="12" inputmode="decimal"></div>
+<div><label>Desperdicio (%)</label><input id="des" type="number" value="10" inputmode="decimal"></div>
+</div></div>
+<div class="card"><h2>3. Diseño de la columna</h2><div id="o1"></div><p class="note">Se usa el 1% mínimo de As y un mínimo de 4 varillas (una por esquina). Máximo permitido: 8%.</p></div>
+<div class="card"><h2>Alternativas por diámetro</h2><div style="overflow-x:auto"><table id="alt-t"></table></div></div>
+<div class="card"><h2>4. Material a comprar</h2><div id="o2"></div><p class="note">Estribo = perímetro interior (sección − 2×recubrimiento) + 2 ganchos de 10 cm. Nº de estribos = altura/separación + 1. No incluye traslapes en empalmes adicionales.</p></div>
+<div class="card"><h2>Herramientas</h2>
+<p id="validation-message" class="note bad" role="alert" hidden></p>
+<p id="storage-message" class="note bad" role="status" hidden></p>
+<div class="actions"><button id="export-button" type="button">⬇️ Exportar CSV</button><button id="share-button" type="button">📤 Compartir cálculo</button></div>
+<p id="export-message" class="note" role="status" hidden></p><p id="share-message" class="note" role="status" hidden></p>
+<button id="theme-button" type="button"></button>
+</div>
+<p id="pwa-status" class="note" role="status" hidden></p>
+<button id="inst">📲 Instalar app</button>
+</main>
+<script type="module">
+import { InputsController } from './controllers/inputs-controller.js';
+import { DesignController } from './controllers/design-controller.js';
+import { MaterialsController } from './controllers/materials-controller.js';
+import { ViewController } from './controllers/view-controller.js';
+import { PwaController } from './controllers/pwa-controller.js';
+import { ValidationController } from './controllers/validation-controller.js';
+import { StorageController } from './controllers/storage-controller.js';
+import { ExportController } from './controllers/export-controller.js';
+import { ShareController } from './controllers/share-controller.js';
+import { ThemeController } from './controllers/theme-controller.js';
+
+const inputs = new InputsController();
+const design = new DesignController();
+const materials = new MaterialsController();
+const view = new ViewController();
+const validation = new ValidationController();
+const storage = new StorageController();
+storage.initialize(inputs.fields);
+const theme = new ThemeController();
+theme.initialize();
+
+let latestReport = null;
+function update() {
+  if (!validation.validate()) {
+    latestReport = null;
+    document.getElementById('o1').textContent = '';
+    document.getElementById('o2').textContent = '';
+    document.getElementById('alt-t').textContent = '';
+    return;
+  }
+  const values = inputs.getValues();
+  if (!values) return;
+  const result = design.calculate(values);
+  const materialResult = materials.calculate(values, result);
+  latestReport = { values, design: result, materials: materialResult };
+  view.renderDesign(result);
+  view.renderMaterials(materialResult);
+}
+
+inputs.onChange(update);
+update();
+new ExportController().initialize(() => latestReport);
+new ShareController().initialize(() => latestReport);
+new PwaController().initialize();
+</script></body></html>
